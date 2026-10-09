@@ -27,6 +27,7 @@ Then open <http://localhost:8000>. Make sure the API server (the Echo app in
 | `main.go`   | Route registration + dev server + `/api/*` reverse proxy    |
 | `app.go`    | `TaskApp` component: state, lifecycle, handlers, networking |
 | `render.go` | `Render()` and view helpers (auth form, task table, etc.)  |
+| `web/app.css` | Stylesheet (palette, layout, badges, errors); served at `/web/app.css` |
 | `browser.go`| Build-constraint marker for the `js/wasm` client build      |
 
 ## How it works

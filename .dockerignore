@@ -1,0 +1,16 @@
+# Keep secrets and local build artifacts out of the image build context.
+.git
+.gitignore
+.env
+.env.*
+docker-compose.yml
+docker-compose.*.yml
+
+# Locally-built wasm (the image builds its own fresh copy).
+# Keep ui/web/app.css — it's a source file the runtime stage copies in.
+**/*.wasm
+
+# Editor / OS cruft.
+.idea
+.vscode
+.DS_Store

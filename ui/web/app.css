@@ -1,0 +1,210 @@
+/*
+ * Task Manager UI stylesheet
+ * --------------------------
+ * Served by the go-app handler as a static resource at /web/app.css and
+ * referenced via Handler.Styles, which emits:
+ *   <link rel="stylesheet" href="/web/app.css">
+ *
+ * Palette
+ *   --teal       #34A99D  primary actions, focus rings, "done" badge
+ *   --teal-dark  #458393  headings, emphasis, "in progress" badge, borders
+ *   --gold       #E5CB90  accents: input borders, card edges, table underlines
+ *   --cream      #FFF3C8  page background, "in progress" badge text
+ *   --rose       #FF0052  errors and the destructive (delete) button
+ */
+
+:root {
+    --teal:      #34A99D;
+    --teal-dark: #458393;
+    --gold:      #E5CB90;
+    --cream:     #FFF3C8;
+    --rose:      #FF0052;
+}
+
+/* ---- Base --------------------------------------------------------------- */
+
+body {
+    margin: 0;
+    font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+    background: var(--cream);
+    color: #23424c;
+}
+
+.wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+/* ---- Typography --------------------------------------------------------- */
+
+h1 {
+    font-size: 1.6rem;
+    margin: 0 0 4px;
+    color: var(--teal-dark);
+    letter-spacing: .2px;
+}
+
+h2 {
+    font-size: 1.1rem;
+    margin: .2em 0 .8em;
+    color: var(--teal-dark);
+}
+
+/* A short gold underline accent beneath the page title. */
+h1::after {
+    content: "";
+    display: block;
+    width: 48px;
+    height: 3px;
+    margin-top: 6px;
+    background: var(--gold);
+    border-radius: 2px;
+}
+
+.muted {
+    color: rgba(69, 131, 147, .7);
+    font-size: .9rem;
+}
+
+/* ---- Layout cards ------------------------------------------------------- */
+
+.card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(69, 131, 147, .12);
+    padding: 18px;
+    margin: 16px 0;
+    border: 1px solid rgba(229, 203, 144, .6);
+}
+
+.row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.tab {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+/* ---- Forms -------------------------------------------------------------- */
+
+input,
+select,
+button {
+    font: inherit;
+    padding: 9px 11px;
+    border: 1px solid var(--gold);
+    border-radius: 8px;
+    background: #fff;
+    color: inherit;
+}
+
+input {
+    flex: 1;
+    min-width: 120px;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(52, 169, 157, .18);
+}
+
+/* ---- Buttons ------------------------------------------------------------ */
+
+button {
+    cursor: pointer;
+    background: var(--teal);
+    color: #fff;
+    border-color: var(--teal);
+    transition: background .15s, border-color .15s;
+}
+
+button:hover {
+    background: var(--teal-dark);
+    border-color: var(--teal-dark);
+}
+
+button.secondary {
+    background: transparent;
+    color: var(--teal-dark);
+    border-color: var(--teal-dark);
+}
+
+button.secondary:hover {
+    background: var(--teal-dark);
+    color: #fff;
+}
+
+button.danger {
+    background: var(--rose);
+    border-color: var(--rose);
+}
+
+button.danger:hover {
+    background: #c70042;
+    border-color: #c70042;
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+/* ---- Tables ------------------------------------------------------------- */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+}
+
+th {
+    color: var(--teal-dark);
+    border-bottom: 2px solid var(--gold);
+}
+
+td {
+    text-align: left;
+    padding: 8px;
+    border-bottom: 1px solid rgba(229, 203, 144, .5);
+}
+
+/* ---- Status badges ------------------------------------------------------ */
+
+.badge {
+    font-size: .75rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--gold);
+    color: var(--teal-dark);
+}
+
+.badge.done {
+    background: var(--teal);
+    color: #fff;
+}
+
+.badge.in_progress {
+    background: var(--teal-dark);
+    color: var(--cream);
+}
+
+/* ---- Error banner ------------------------------------------------------- */
+
+.err {
+    color: var(--rose);
+    background: rgba(255, 0, 82, .08);
+    border-left: 3px solid var(--rose);
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin: 8px 0;
+    font-size: .92rem;
+}

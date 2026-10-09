@@ -1,0 +1,107 @@
+# docker-compose.yml — works with both `docker compose` and `podman-compose`.
+#
+#   podman-compose up --build      # build & start everything
+#   podman-compose logs -f api      # tail API logs
+#   podman-compose down             # stop (keeps the DB volume)
+#   podman-compose down -v          # stop AND wipe the DB volume
+#
+# Architecture:
+#   browser -> ui:8000 (go-app server + SPA/wasm)
+#                   |  reverse-proxies /api/*  ->  api:8080 (Echo)
+#                                                            |  postgres:5432
+#
+# Host-published addresses (what you point a browser / psql at):
+#   UI  (browser entry):   http://localhost:8000
+#   API (direct/debug):    http://localhost:8080
+#   Postgres (host tools): localhost:5433  (maps to container 5432; the port is
+#                         non-default so it never clashes with a system
+#                         PostgreSQL on 5432, and it's bound to 127.0.0.1 only)
+# Internal compose-network hostnames (containers only):
+#   postgres:5432, api:8080
+#
+# DB credentials are interpolated from the project .env (with sane defaults),
+# so Postgres and the API can never disagree on the user/password/db. The .env
+# file itself is .dockerignore'd and never baked into an image — it's only used
+# for ${VAR:-default} substitution at compose-parse time.
+
+name: task-manager
+
+services:
+  postgres:
+    image: docker.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-task_manager}
+    # Publish the DB to the host on an alternate port (default 5433) so it can't
+    # collide with a system-installed PostgreSQL on 5432. Bound to 127.0.0.1
+    # only — reachable from the host for psql/GUI tools, not from the network.
+    # The api service still connects internally to postgres:5432 (DB_PORT=5432),
+    # unaffected by this host mapping. Override with PG_HOST_PORT in .env.
+    ports:
+      - "127.0.0.1:${PG_HOST_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-task_manager}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      SERVER_PORT: "8080"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-task_manager}
+      DB_SSLMODE: ${DB_SSLMODE:-disable}
+      DB_TIMEZONE: ${DB_TIMEZONE:-UTC}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_EXPIRE_HOURS: ${JWT_EXPIRE_HOURS:-24}
+    # NOTE: we intentionally use plain depends_on (started order), not
+    # condition: service_healthy. podman-compose does not reliably monitor/
+    # progress healthchecks (the state can stick at "starting" forever), which
+    # would gate this service out entirely. The API tolerates a not-yet-ready
+    # DB itself via the retry loop in database.Connect.
+    depends_on:
+      - postgres
+    # Healthcheck is kept for observability (podman ps, docker inspect) but no
+    # longer gates startup.
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  ui:
+    build:
+      context: .
+      dockerfile: ui/Dockerfile
+    # The UI server flags: listen on :8000, proxy /api to the api service.
+    # NOTE: do NOT repeat the binary path here — the Dockerfile ENTRYPOINT is
+    # /app/uiserver, and compose's `command` supplies only the *args* after it.
+    # Including the path would insert a stray positional arg that makes Go's
+    # flag.Parse stop before -addr/-api, silently falling back to defaults
+    # (and proxying to localhost instead of the api service).
+    command: ["-addr=:8000", "-api=http://api:8080"]
+    # Plain started-order dependency (see api service note). The UI listens on
+    # :8000 immediately; /api calls may briefly 502 until the API finishes
+    # its DB retry and starts serving — a browser refresh recovers.
+    depends_on:
+      - api
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
